@@ -1,7 +1,6 @@
 """
 Current state class for poker game
 """
-from random import shuffle
 from player import Player
 
 
@@ -19,6 +18,7 @@ class CurrentState:
         small_blind is the small blind amount
         """
         self.small_blind, self.player_list = small_blind, player_list
+        self.current_pot = 0
 
     # def __str__(self):
     #     """
