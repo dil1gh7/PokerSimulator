@@ -1,5 +1,6 @@
-from current_state_poker import CurrentState
+from rotation import Rotation
 from random import shuffle
+from game import Player
 
 card_deck = ['2h', '2c', '2s', '2d', '3h', '3c', '3s', '3d', '4h', '4c',
              '4s', '4d', '5h', '5c', '5s', '5d', '6h', '6c', '6s', '6d',
@@ -15,15 +16,17 @@ class Round:
     """
 
     def __init__(self, small_blind: int, player_list: list) -> None:
+
         self.card_deck, self.current_pot, self.small_blind, self.player_list, self.big_blind =\
             card_deck, 0, small_blind, player_list, small_blind * 2
-        self.community_cards = []
+        self.community_cards_hidden = []
+        self.community_cards_open = []
         for player in self.player_list:
             # Sets a player with position 0 to move in the beginning of each round
             if player.position == 0:
                 player.is_turn = True
-        # creates a state
-        self.current_state = CurrentState(small_blind, player_list)
+        # creates a rotation
+        self.current_rotation = Rotation(self.small_blind, self.player_list)
 
     def get_current_pot(self) -> int:
         """
@@ -31,7 +34,7 @@ class Round:
         """
         return self.current_pot
 
-    def hand_winner(self) -> None:
+    def hand_winner(self) -> "Player":
         """
         Determines the winner of the hand and adds the pot to the player's bank
         if the player is the winner
@@ -43,15 +46,9 @@ class Round:
         Returns whether or not the hand is over
         """
         round_over = False
-        if len(self.current_state.get_possible_moves()) == 0:
+        if len(self.current_rotation.get_possible_moves()) == 0:
             round_over = True
         return round_over
-
-    def hand_counter_inc(self) -> object:
-        """
-        Returns an incremented data of hand counter
-        """
-        pass
 
     def give_cards(self) -> None:
         """
@@ -61,10 +58,13 @@ class Round:
         for player in self.player_list:
             if player.position == 1:
                 player.bank -= self.small_blind
-                self.current_state.current_pot += self.small_blind
+                player.to_call = self.small_blind
+                self.current_rotation.current_pot += self.small_blind
             elif player.position == 2:
                 player.bank -= self.big_blind
-                self.current_state.current_pot += self.big_blind
+                self.current_rotation.current_pot += self.big_blind
+            else:
+                player.to_call = self.big_blind
         # Shuffle the deck
         shuffle(self.card_deck)
         # Give players their cards
@@ -73,7 +73,7 @@ class Round:
             player.hand.append(self.card_deck.pop())
         # Place community cards
         for i in range(5):
-            self.community_cards.append(self.card_deck.pop())
+            self.community_cards_hidden.append(self.card_deck.pop())
 
 
 
