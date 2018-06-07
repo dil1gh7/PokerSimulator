@@ -1,5 +1,6 @@
 """
-Current state class for poker game
+Current state class for poker game. Each state is one rotation - preflop, flop, post-flop, turn, post-turn, river,
+post river.
 """
 from player import Player
 
@@ -18,7 +19,8 @@ class CurrentState:
         small_blind is the small blind amount
         """
         self.small_blind, self.player_list = small_blind, player_list
-        self.current_pot = 0
+        self.current_pot, self.current_bet = 0, 0
+        self.active_players = [player for player in self.player_list]
 
     # def __str__(self):
     #     """
@@ -66,6 +68,11 @@ class CurrentState:
     def make_move(self, move: str):
         """
         Applies the move
+        TODO:
+
+        2. Check
+
+        5. Check if you need to pass the move to the next player after the move (change player.position
         """
         if not self.is_valid_move(move):
             raise ValueError('The selected move is not valid')
@@ -76,6 +83,35 @@ class CurrentState:
             # if current player folds, remove the player from the list of players
             if move == "Fold":
                 self.player_list.pop(self.player_list.index(self.get_current_player()))
+                self.active_players.pop(self.player_list.index(self.get_current_player()))
+            # if current player bets/raises: prompt bet/raise amount, add that to the pot, update self.current_bet
+            elif move == "Bet" or move == "Raise":
+                # ask for amount
+                amount = input("Bet or Raise amount: ")
+                # deduce the amount from the player's bank
+                self.get_current_player().bank -= amount
+                # add the amount to the pot
+                self.current_pot += amount
+                # add the amount to current bet
+                self.current_bet += amount
+                # update to_call for all the other players
+                for player in self.player_list:
+                    player.to_call = amount
+                # if the player raises, add everyone back to the active_players list except the player
+                if move == "Raise":
+                    self.active_players = [player for player in self.player_list]
+                    self.active_players.pop(self.player_list.index(self.get_current_player()))
+
+            # if player calls: add to the pot.
+            elif move == "Call":
+                # deduce to_call from the bank
+                self.get_current_player().bank -= self.get_current_player().to_call
+                # add to_call to the pot
+                self.current_pot += self.get_current_player().to_call
+                # remove the player from the active_player list
+                self.active_players.pop(self.player_list.index(self.get_current_player()))
+            elif move == "Check":
+                self.active_players.pop(self.player_list.index(self.get_current_player()))
             # Create a new state
             new_state = CurrentState(self.small_blind, self.player_list)
             return new_state
